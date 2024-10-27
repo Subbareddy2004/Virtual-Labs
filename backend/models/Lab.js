@@ -3,22 +3,25 @@ const mongoose = require('mongoose');
 const LabSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: true
   },
-  description: String,
-  evaluators: [{
+  description: {
+    type: String,
+    required: true
+  },
+  assignedStudents: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
-  mentors: [{
+  assignedMentors: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
-  students: [{
+  assignedEvaluators: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
-  }],
-  // Add other fields as needed
+  }]
+  // ... other fields ...
 });
 
 module.exports = mongoose.model('Lab', LabSchema);

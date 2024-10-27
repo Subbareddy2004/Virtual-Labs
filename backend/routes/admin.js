@@ -7,8 +7,17 @@ const Reservation = require('../models/Reservation');
 const csv = require('csv-express');
 const auth = require('../middleware/auth');
 
-// Apply auth middleware to all admin routes
-router.use(auth);
+// Middleware to check if the user is an admin
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Access denied. Admin only.' });
+  }
+};
+
+// Apply auth and isAdmin middleware to all admin routes
+router.use(auth, isAdmin);
 
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
@@ -182,6 +191,70 @@ router.get('/reports/:type', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
+  }
+});
+
+// Get available students (not enrolled in any lab)
+router.get('/available-students', async (req, res) => {
+  try {
+    const students = await User.find({ role: 'student' }).select('name email');
+    res.json(students);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
+// Get available labs
+router.get('/available-labs', async (req, res) => {
+  try {
+    const labs = await Lab.find().select('name');
+    res.json(labs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
+// Get available users by role
+router.get('/available-users', async (req, res) => {
+  try {
+    const { role } = req.query;
+    const users = await User.find({ role }).select('name email');
+    res.json(users);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+});
+
+// Enroll users
+router.post('/enroll', auth, isAdmin, async (req, res) => {
+  try {
+    const { users, labId, role } = req.body;
+    
+    // Ensure users is an array
+    const userArray = Array.isArray(users) ? users : [users];
+
+    const lab = await Lab.findById(labId);
+    if (!lab) {
+      return res.status(404).json({ message: 'Lab not found' });
+    }
+
+    if (role === 'student') {
+      lab.assignedStudents = [...new Set([...lab.assignedStudents, ...userArray])];
+    } else if (role === 'mentor') {
+      lab.assignedMentors = [...new Set([...lab.assignedMentors, ...userArray])];
+    } else if (role === 'evaluator') {
+      lab.assignedEvaluators = [...new Set([...lab.assignedEvaluators, ...userArray])];
+    }
+
+    await lab.save();
+
+    res.json({ message: 'Users enrolled successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 

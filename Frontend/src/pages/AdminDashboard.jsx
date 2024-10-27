@@ -25,9 +25,13 @@ function AdminDashboard() {
   const [showCreateLabModal, setShowCreateLabModal] = useState(false);
   const [showEnrollUsersModal, setShowEnrollUsersModal] = useState(false);
   const [showCreateExerciseModal, setShowCreateExerciseModal] = useState(false);
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [showEnrollModal, setShowEnrollModal] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
 
   useEffect(() => {
     fetchData();
+    fetchDashboardData();
   }, []);
 
   const fetchData = async () => {
@@ -49,6 +53,15 @@ function AdminDashboard() {
       setError('Failed to load dashboard data. Please try again later.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await api.get('/admin/dashboard');
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
     }
   };
 
@@ -93,9 +106,11 @@ function AdminDashboard() {
   const handleEnrollUsers = async (enrollmentData) => {
     try {
       await api.post('/admin/enroll', enrollmentData);
-      fetchData();
-    } catch (err) {
-      console.error('Error enrolling users:', err);
+      fetchDashboardData(); // Refresh the dashboard data
+      setShowEnrollModal(false);
+    } catch (error) {
+      console.error('Error enrolling users:', error);
+      // Show an error message to the user
     }
   };
 
@@ -123,6 +138,16 @@ function AdminDashboard() {
     }
   };
 
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+      },
+    },
+  };
+
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Admin Dashboard</h1>
@@ -143,11 +168,15 @@ function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4 text-gray-700">Total Users and Labs</h2>
-              {stats.userLabData.labels.length > 0 && <Pie data={stats.userLabData} />}
+              <div style={{ height: '200px' }}>
+                {stats.userLabData.labels.length > 0 && <Pie data={stats.userLabData} options={chartOptions} />}
+              </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow">
               <h2 className="text-xl font-bold mb-4 text-gray-700">Lab Usage</h2>
-              {stats.labUsageData.labels.length > 0 && <Bar data={stats.labUsageData} />}
+              <div style={{ height: '200px' }}>
+                {stats.labUsageData.labels.length > 0 && <Bar data={stats.labUsageData} options={chartOptions} />}
+              </div>
             </div>
           </div>
 

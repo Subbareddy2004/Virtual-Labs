@@ -7,8 +7,10 @@ const Attendance = require('../models/Attendance');
 const auth = require('../middleware/auth');
 const csv = require('csv-express');
 
+router.use(auth);
+
 // Get assigned labs
-router.get('/labs', auth, async (req, res) => {
+router.get('/labs', async (req, res) => {
   try {
     const labs = await Lab.find({ mentors: req.user.id });
     res.json(labs);
@@ -19,7 +21,7 @@ router.get('/labs', auth, async (req, res) => {
 });
 
 // Get active users for a lab
-router.get('/active-users/:labId', auth, async (req, res) => {
+router.get('/active-users/:labId', async (req, res) => {
   try {
     const activeUsers = await User.find({
       currentLab: req.params.labId,
@@ -34,7 +36,7 @@ router.get('/active-users/:labId', auth, async (req, res) => {
 });
 
 // Get student utilization for a lab
-router.get('/utilization/:labId', auth, async (req, res) => {
+router.get('/utilization/:labId', async (req, res) => {
   try {
     const utilization = await Attendance.aggregate([
       { $match: { lab: req.params.labId } },
@@ -64,7 +66,7 @@ router.get('/utilization/:labId', auth, async (req, res) => {
 });
 
 // Get attendance for a lab
-router.get('/attendance/:labId', auth, async (req, res) => {
+router.get('/attendance/:labId', async (req, res) => {
   try {
     const attendance = await Attendance.find({ lab: req.params.labId })
       .populate('student', 'name')
@@ -77,7 +79,7 @@ router.get('/attendance/:labId', auth, async (req, res) => {
 });
 
 // Download attendance report
-router.get('/attendance/:labId/download', auth, async (req, res) => {
+router.get('/attendance/:labId/download', async (req, res) => {
   try {
     const attendance = await Attendance.find({ lab: req.params.labId })
       .populate('student', 'name')
@@ -97,7 +99,7 @@ router.get('/attendance/:labId/download', auth, async (req, res) => {
 });
 
 // View student's lab environment
-router.get('/student-lab/:labId/:studentId', auth, async (req, res) => {
+router.get('/student-lab/:labId/:studentId', async (req, res) => {
   try {
     // This is a placeholder. In a real implementation, you would need to integrate
     // with your lab environment system to get a URL or connection details.
@@ -110,7 +112,7 @@ router.get('/student-lab/:labId/:studentId', auth, async (req, res) => {
 });
 
 // Get active users in current session
-router.get('/active-users/:labId', auth, async (req, res) => {
+router.get('/active-users/:labId', async (req, res) => {
   try {
     const activeReservations = await Reservation.find({
       lab: req.params.labId,
@@ -125,13 +127,13 @@ router.get('/active-users/:labId', auth, async (req, res) => {
 });
 
 // View student's lab environment (placeholder)
-router.get('/student-lab/:studentId/:labId', auth, async (req, res) => {
+router.get('/student-lab/:studentId/:labId', async (req, res) => {
   // Implement logic to view student's lab environment
   res.json({ message: 'Viewing student lab environment' });
 });
 
 // Get student utilization report
-router.get('/utilization/:labId', auth, async (req, res) => {
+router.get('/utilization/:labId', async (req, res) => {
   try {
     const utilization = await User.aggregate([
       { $match: { role: 'student' } },
@@ -141,6 +143,45 @@ router.get('/utilization/:labId', auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Server Error');
+  }
+});
+
+// View assigned labs
+router.get('/assigned-labs', async (req, res) => {
+  try {
+    const labs = await Lab.find({ assignedMentors: req.user.id });
+    res.json(labs);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// View active users in current session
+router.get('/active-users', async (req, res) => {
+  try {
+    const activeReservations = await Reservation.find({
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date() }
+    }).populate('student lab');
+    res.json(activeReservations);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
+// View student utilization report
+router.get('/utilization/:labId', async (req, res) => {
+  try {
+    const utilization = await Reservation.aggregate([
+      { $match: { lab: req.params.labId } },
+      { $group: { _id: '$student', totalHours: { $sum: { $subtract: ['$endDate', '$startDate'] } } } }
+    ]);
+    res.json(utilization);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 
