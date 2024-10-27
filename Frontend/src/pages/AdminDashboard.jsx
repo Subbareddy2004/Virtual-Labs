@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
 import { Line, Bar, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, registerables } from 'chart.js';
@@ -9,6 +9,7 @@ import CreateExerciseModal from '../components/CreateExerciseModal';
 import UserList from '../components/UserList';
 import LabList from '../components/LabList';
 import ReportDownloader from '../components/ReportDownloader';
+import { AuthContext } from '../context/AuthContext';
 
 ChartJS.register(...registerables);
 
@@ -28,6 +29,7 @@ function AdminDashboard() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [showEnrollModal, setShowEnrollModal] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
+  const { logout } = useContext(AuthContext);
 
   useEffect(() => {
     fetchData();
