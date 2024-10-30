@@ -1,10 +1,14 @@
 import React, { useContext } from 'react';
-import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Link, Navigate } from 'react-router-dom';
 import { AuthContext, AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
+import MentorDashboard from './pages/MentorDashboard';
+import Home from './pages/Home';
+import ProtectedRoute from './components/ProtectedRoute'; // Add this import
+import EvaluatorDashboard from './pages/EvaluatorDashboard';
 // Import other components as needed
 
 function NavBar() {
@@ -39,11 +43,30 @@ function App() {
         <div className="App">
           <NavBar />
           <Routes>
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/student" element={<StudentDashboard />} />
-            {/* Add other routes as needed */}
+            <Route path="/admin" element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/student" element={
+              <ProtectedRoute roles={['student']}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/mentor" element={
+              <ProtectedRoute roles={['mentor']}>
+                <MentorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/evaluator" element={
+              <ProtectedRoute roles={['evaluator']}>
+                <EvaluatorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
       </AuthProvider>

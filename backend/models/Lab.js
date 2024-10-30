@@ -17,7 +17,7 @@ const LabSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }],
-  assignedEvaluators: [{
+  evaluators: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }]

@@ -6,7 +6,7 @@ const authRoutes = require('./routes/auth');
 const studentRoutes = require('./routes/student');
 const adminRoutes = require('./routes/admin');
 const mentorRoutes = require('./routes/mentor');
-const evaluatorRoutes = require('./routes/evaluator');
+const evaluatorRoutes = require('./routes/evaluatorRoutes');
 
 const app = express();
 

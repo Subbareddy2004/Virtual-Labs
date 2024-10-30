@@ -1,52 +1,107 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
-import LabCard from '../components/LabCard';
-import Notification from '../components/Notification';
 
 function MentorDashboard() {
-  const { user } = useContext(AuthContext);
-  const [labs, setLabs] = useState([]);
-  const [notification, setNotification] = useState(null);
+  const [assignedLabs, setAssignedLabs] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
+  const [selectedLab, setSelectedLab] = useState(null);
+  const [studentReports, setStudentReports] = useState([]);
 
   useEffect(() => {
-    fetchLabs();
+    fetchAssignedLabs();
+    fetchActiveUsers();
   }, []);
 
-  const fetchLabs = async () => {
+  const fetchAssignedLabs = async () => {
     try {
-      const res = await api.get('/mentor/labs');
-      setLabs(res.data);
-    } catch (err) {
-      console.error('Error fetching labs:', err);
-      setNotification({ 
-        type: 'error', 
-        message: `Failed to fetch labs: ${err.response?.data?.message || 'Unknown error'}` 
-      });
+      const response = await api.get('/mentor/assigned-labs');
+      setAssignedLabs(response.data);
+    } catch (error) {
+      console.error('Error fetching assigned labs:', error);
+    }
+  };
+
+  const fetchActiveUsers = async () => {
+    try {
+      const response = await api.get('/mentor/active-users');
+      setActiveUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching active users:', error);
+    }
+  };
+
+  const viewLabDetails = async (labId) => {
+    try {
+      const response = await api.get(`/mentor/lab-details/${labId}`);
+      setSelectedLab(response.data);
+    } catch (error) {
+      console.error('Error fetching lab details:', error);
+    }
+  };
+
+  const viewStudentReports = async (labId) => {
+    try {
+      const response = await api.get(`/mentor/student-reports/${labId}`);
+      setStudentReports(response.data);
+    } catch (error) {
+      console.error('Error fetching student reports:', error);
+    }
+  };
+
+  const downloadAttendanceReport = async (labId) => {
+    try {
+      const response = await api.get(`/mentor/attendance-report/${labId}`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `attendance_report_${labId}.csv`);
+      document.body.appendChild(link);
+      link.click();
+    } catch (error) {
+      console.error('Error downloading attendance report:', error);
     }
   };
 
   return (
-    <div className="bg-gray-100 min-h-screen">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Welcome, Mentor {user?.name}</h1>
-        {notification && <Notification {...notification} />}
-        
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold mb-4 text-gray-700">Your Labs</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {labs.map((lab) => (
-              <LabCard 
-                key={lab._id} 
-                lab={lab} 
-                // Add mentor-specific actions here
-              />
-            ))}
-          </div>
-        </div>
-        
-        {/* Add other mentor-specific components here */}
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Mentor Dashboard</h1>
+      
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">Assigned Labs</h2>
+        <ul>
+          {assignedLabs.map(lab => (
+            <li key={lab.id} className="mb-2">
+              {lab.name}
+              <button onClick={() => viewLabDetails(lab.id)} className="ml-2 bg-blue-500 text-white px-2 py-1 rounded">View Details</button>
+              <button onClick={() => viewStudentReports(lab.id)} className="ml-2 bg-green-500 text-white px-2 py-1 rounded">View Reports</button>
+              <button onClick={() => downloadAttendanceReport(lab.id)} className="ml-2 bg-purple-500 text-white px-2 py-1 rounded">Download Attendance</button>
+            </li>
+          ))}
+        </ul>
       </div>
+
+      <div className="mb-8">
+        <h2 className="text-xl font-semibold mb-2">Active Users</h2>
+        <ul>
+          {activeUsers.map(user => (
+            <li key={user.id}>{user.name} - {user.lab}</li>
+          ))}
+        </ul>
+      </div>
+
+      {selectedLab && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-2">Lab Details: {selectedLab.name}</h2>
+          {/* Display lab details and student environments here */}
+        </div>
+      )}
+
+      {studentReports.length > 0 && (
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Student Utilization Reports</h2>
+          {/* Display student reports here */}
+        </div>
+      )}
     </div>
   );
 }
